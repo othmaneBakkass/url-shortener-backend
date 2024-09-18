@@ -3,10 +3,17 @@ import { Hono } from "hono";
 import { createShortLink, getShortLinks } from "./repositories/shortlinks";
 import { CreateShortLinkSchema } from "./repositories/shortlinks/schema";
 import { nanoid } from "nanoid";
+import { cors } from "hono/cors";
 
 const app = new Hono();
 
 app
+	.use(
+		cors({
+			origin: process.env.CLIENT_URL ?? "http://localhost:3000",
+			allowMethods: ["GET", "POST"],
+		})
+	)
 	.get("/shortLinks", async (c) => {
 		const data = await getShortLinks();
 
