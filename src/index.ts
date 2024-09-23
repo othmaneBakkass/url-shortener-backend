@@ -1,9 +1,15 @@
-import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { createShortLink, getShortLinks } from "./repositories/shortlinks";
-import { CreateShortLinkSchema } from "./repositories/shortlinks/schema";
-import { nanoid } from "nanoid";
 import { cors } from "hono/cors";
+import { serve } from "@hono/node-server";
+import { nanoid } from "nanoid";
+import {
+	createShortLink,
+	deleteShortLinkByID,
+	getShortLinkByMiniUrl,
+	getShortLinks,
+} from "@/repositories/shortlinks";
+import { CreateShortLinkSchema } from "@/repositories/shortlinks/schema";
+import { createApiErrorObject, filterShortLinksBySearchKey } from "@/utils";
 
 const app = new Hono();
 
@@ -11,19 +17,42 @@ app
 	.use(
 		cors({
 			origin: process.env.CLIENT_URL ?? "http://localhost:3000",
-			allowMethods: ["GET", "POST"],
+			allowMethods: ["GET", "POST", "DELETE"],
 		})
 	)
-	.get("/shortLinks", async (c) => {
-		const data = await getShortLinks();
+	.get("/shortLinks/:miniUrlId", async (c) => {
+		const miniUrlId = c.req.param("miniUrlId");
+		if (!miniUrlId) {
+			return c.json(createApiErrorObject("bad parameters", 400), 400);
+		}
+		const data = await getShortLinkByMiniUrl(miniUrlId);
 
-		if (!data.ok) {
-			c.status(500);
-			return c.json(data);
+		if (!data.ok) return c.json(createApiErrorObject(data.msg, 500), 500);
+
+		return c.json(data, 200);
+	})
+	.delete("/shortLinks/:id", async (c) => {
+		const id = c.req.param("id");
+		if (!id) {
+			return c.json(createApiErrorObject("bad parameters", 400), 400);
+		}
+		const data = await deleteShortLinkByID(id);
+
+		if (!data.ok) return c.json(createApiErrorObject(data.msg, 500), 500);
+
+		return c.json(data, 200);
+	})
+	.get("/shortLinks", async (c) => {
+		let data = await getShortLinks();
+
+		if (!data.ok) return c.json(createApiErrorObject(data.msg, 500), 500);
+		const searchKey = c.req.query("searchKey");
+
+		if (searchKey && searchKey.length > 0 && searchKey !== " ") {
+			data = filterShortLinksBySearchKey({ data, searchKey });
 		}
 
-		c.status(200);
-		return c.json(data);
+		return c.json(data, 200);
 	})
 	.post("/shortLinks", async (c) => {
 		const body = await c.req.json();
@@ -31,23 +60,17 @@ app
 		const props = CreateShortLinkSchema.safeParse({ ...body, short_link });
 
 		if (!props.success) {
-			c.status(400);
-			return c.json({ msg: "schema error", error: props.error });
+			return c.json(createApiErrorObject("bad parameters", 400), 400);
 		}
 
 		const data = await createShortLink(props.data);
 
-		if (!data.ok) {
-			c.status(500);
-			return c.json(data);
-		}
+		if (!data.ok) return c.json(createApiErrorObject(data.msg, 500), 500);
 
-		c.status(200);
-		return c.json(data);
+		return c.json(data, 200);
 	});
 
 const port = 3000;
-
 serve({
 	fetch: app.fetch,
 	port,
