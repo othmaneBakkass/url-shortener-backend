@@ -2,7 +2,8 @@
 	"name": "backend",
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
-		"db:deploy": "pnpm dlx prisma migrate deploy"
+		"db:deploy": "pnpm dlx prisma migrate deploy",
+		"db:client": "pnpm dlx prisma generate"
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.13.0",
