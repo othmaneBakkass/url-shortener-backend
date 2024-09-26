@@ -70,7 +70,8 @@ app
 		return c.json(data, 200);
 	});
 
-const port = 3000;
+const dynamicPort = Number(process.env.BACKEND_SERVER_PORT);
+const port = isNaN(dynamicPort) ? 3000 : dynamicPort;
 serve({
 	fetch: app.fetch,
 	port,
