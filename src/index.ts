@@ -72,6 +72,7 @@ app
 
 const dynamicPort = Number(process.env.BACKEND_SERVER_PORT);
 const port = isNaN(dynamicPort) ? 3000 : dynamicPort;
+console.log("🚀 ~ running server on  ~", port);
 serve({
 	fetch: app.fetch,
 	port,
