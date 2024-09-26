@@ -10,8 +10,11 @@ import {
 } from "@/repositories/shortlinks";
 import { CreateShortLinkSchema } from "@/repositories/shortlinks/schema";
 import { createApiErrorObject, filterShortLinksBySearchKey } from "@/utils";
+import { config } from "dotenv";
 
 const app = new Hono();
+
+config();
 
 app
 	.use(
